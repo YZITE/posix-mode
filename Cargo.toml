@@ -1,0 +1,43 @@
+[package]
+name = "yz-posix-mode"
+description = "standalone POSIX.1 file mode bitfields and bitmasks"
+version = "0.0.0"
+authors = [
+  "Erik Zscheile <zseri@ytrizja.de>",
+]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/YZITE/posix-mode"
+readme = "README.md"
+
+[features]
+num = ["num-derive", "num-traits"]
+
+[dependencies]
+bitflags = "1.2"
+
+[dependencies.nix]
+version = "0.17"
+optional = true
+
+[dependencies.num-derive]
+version = "0.3"
+optional = true
+
+[dependencies.num-traits]
+version = "0.2"
+optional = true
+
+[dependencies.serde]
+version = "1.0"
+optional = true
+default-features = false
+features = ["derive"]
+
+[dependencies.umask]
+version = ">= 0.1, < 1.1"
+optional = true
+
+[target."cfg(unix)".dev-dependencies]
+nix = "0.17"
+paste = "1.0"
