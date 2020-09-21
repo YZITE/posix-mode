@@ -1,5 +1,7 @@
 #![no_std]
 #![forbid(unsafe_code)]
+#![forbid(clippy::as_conversions, clippy::cast_ptr_alignment, trivial_casts)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 extern crate core;
 
@@ -7,9 +9,9 @@ use bitflags::bitflags;
 use core::fmt::{self, Write};
 
 #[cfg(feature = "num")]
-use num_enum as nd;
-#[cfg(feature = "num")]
 use core::convert::TryInto;
+#[cfg(feature = "num")]
+use num_enum as nd;
 
 #[repr(u16)]
 #[rustfmt::skip]
@@ -33,22 +35,33 @@ pub enum FileType {
     IFSOCK = 0o140000,
 }
 
+macro_rules! feat_num {
+    ($($x:tt)+) => {
+        #[cfg_attr(docsrs, doc(cfg(feature = "num")))]
+        #[cfg(feature = "num")]
+        $($x)+
+    }
+}
+
 impl FileType {
     /// file type bitmask
     pub const IFMT: u16 = 0o170000;
 
+    feat_num! {
     /// Helper function for compatibility with bitflags structs
     #[inline(always)]
-    #[cfg(feature = "num")]
     pub fn from_bits(x: u16) -> Option<Self> {
         x.try_into().ok()
     }
+    }
 
+    feat_num! {
     /// Helper function for compatibility with bitflags structs
     #[inline(always)]
     #[cfg(feature = "num")]
     pub fn bits(self) -> u16 {
         self.into()
+    }
     }
 }
 
@@ -150,7 +163,7 @@ impl fmt::Display for Mode {
     }
 }
 
-#[cfg(feature = "num")]
+feat_num! {
 impl num_enum::TryFromPrimitive for Mode {
     type Primitive = u16;
     const NAME: &'static str = "Mode";
@@ -158,6 +171,7 @@ impl num_enum::TryFromPrimitive for Mode {
     fn try_from_primitive(number: u16) -> Result<Self, num_enum::TryFromPrimitiveError<Self>> {
         Self::from_bits(number).ok_or_else(|| num_enum::TryFromPrimitiveError { number })
     }
+}
 }
 
 impl From<Mode> for u16 {
@@ -167,14 +181,23 @@ impl From<Mode> for u16 {
     }
 }
 
+feat_num! {
 /// Split a file mode into file type and protection bits
-#[cfg(feature = "num")]
 pub fn split(fmode: u16) -> Option<(FileType, Mode)> {
     let ft = FileType::from_bits(fmode & FileType::IFMT)?;
     let md = Mode::from_bits(fmode & !FileType::IFMT)?;
     Some((ft, md))
 }
+}
 
+feat_num! {
+/// Undoes the effect of [`split`], merge [`FileType`] and [`Mode`] back together
+pub fn unsplit(ft: FileType, m: Mode) -> u16 {
+    (ft.bits() & FileType::IFMT) | (m.bits() & !FileType::IFMT)
+}
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "nix")))]
 #[cfg(all(unix, any(test, feature = "nix")))]
 mod nix_;
 

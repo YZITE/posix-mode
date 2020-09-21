@@ -16,7 +16,7 @@ impl From<Mode> for UnixMode {
     }
 }
 
-#[cfg(feature = "num")]
+feat_num! {
 impl core::convert::TryFrom<UnixFileType> for FileType {
     type Error = num_enum::TryFromPrimitiveError<FileType>;
 
@@ -28,7 +28,9 @@ impl core::convert::TryFrom<UnixFileType> for FileType {
         x.try_into()
     }
 }
+}
 
+feat_num! {
 impl From<FileType> for UnixFileType {
     #[inline]
     // x.bits() might be u32 on some platforms
@@ -36,6 +38,7 @@ impl From<FileType> for UnixFileType {
     fn from(x: FileType) -> UnixFileType {
         UnixFileType::from_bits(x.bits().into()).unwrap()
     }
+}
 }
 
 #[cfg(test)]
