@@ -17,13 +17,15 @@ impl From<Mode> for UnixMode {
 }
 
 #[cfg(feature = "num")]
-impl From<UnixFileType> for FileType {
+impl core::convert::TryFrom<UnixFileType> for FileType {
+    type Error = num_enum::TryFromPrimitiveError<FileType>;
+
     #[inline]
     // x.bits() might be u16 on some platforms
     #[allow(clippy::useless_conversion)]
-    fn from(x: UnixFileType) -> FileType {
-        use num_traits::FromPrimitive;
-        FileType::from_u32(x.bits().into()).unwrap()
+    fn try_from(x: UnixFileType) -> Result<FileType, Self::Error> {
+        let x: u16 = x.bits().try_into().unwrap();
+        x.try_into()
     }
 }
 

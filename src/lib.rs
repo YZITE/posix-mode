@@ -7,12 +7,14 @@ use bitflags::bitflags;
 use core::fmt::{self, Write};
 
 #[cfg(feature = "num")]
-use num_derive as nd;
+use num_enum as nd;
+#[cfg(feature = "num")]
+use core::convert::TryInto;
 
 #[repr(u16)]
 #[rustfmt::skip]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "num", derive(nd::FromPrimitive, nd::ToPrimitive))]
+#[cfg_attr(feature = "num", derive(nd::TryFromPrimitive, nd::IntoPrimitive))]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub enum FileType {
     /// directory
@@ -23,11 +25,11 @@ pub enum FileType {
     IFBLK  = 0o060000,
     /// regular file
     IFREG  = 0o100000,
-    // FIFO
+    /// FIFO
     IFIFO  = 0o010000,
-    // symbolic link
+    /// symbolic link
     IFLNK  = 0o120000,
-    // socket
+    /// socket
     IFSOCK = 0o140000,
 }
 
@@ -39,13 +41,14 @@ impl FileType {
     #[inline(always)]
     #[cfg(feature = "num")]
     pub fn from_bits(x: u16) -> Option<Self> {
-        <Self as num_traits::FromPrimitive>::from_u16(x)
+        x.try_into().ok()
     }
 
     /// Helper function for compatibility with bitflags structs
     #[inline(always)]
-    pub fn bits(&self) -> u16 {
-        *self as _
+    #[cfg(feature = "num")]
+    pub fn bits(self) -> u16 {
+        self.into()
     }
 }
 
@@ -147,37 +150,20 @@ impl fmt::Display for Mode {
     }
 }
 
-#[cfg(feature = "num-traits")]
-impl num_traits::FromPrimitive for Mode {
-    #[inline]
-    fn from_i64(n: i64) -> Option<Self> {
-        Self::from_u16(u16::from_i64(n)?)
-    }
+#[cfg(feature = "num")]
+impl num_enum::TryFromPrimitive for Mode {
+    type Primitive = u16;
+    const NAME: &'static str = "Mode";
 
-    #[inline]
-    fn from_u64(n: u64) -> Option<Self> {
-        Self::from_u16(u16::from_u64(n)?)
-    }
-
-    #[inline(always)]
-    fn from_u16(n: u16) -> Option<Self> {
-        Self::from_bits(n)
+    fn try_from_primitive(number: u16) -> Result<Self, num_enum::TryFromPrimitiveError<Self>> {
+        Self::from_bits(number).ok_or_else(|| num_enum::TryFromPrimitiveError { number })
     }
 }
 
-#[cfg(feature = "num-traits")]
-impl num_traits::ToPrimitive for Mode {
+impl From<Mode> for u16 {
     #[inline(always)]
-    fn to_u64(&self) -> Option<u64> {
-        Some(self.bits.into())
-    }
-    #[inline(always)]
-    fn to_u16(&self) -> Option<u16> {
-        Some(self.bits)
-    }
-    #[inline(always)]
-    fn to_i64(&self) -> Option<i64> {
-        Some(self.bits.into())
+    fn from(x: Mode) -> u16 {
+        x.bits()
     }
 }
 
